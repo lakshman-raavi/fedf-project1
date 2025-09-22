@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="review1.css">
+  <title>Extracurricular Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+</head>
+<body>
+  <!-- LOGIN PAGE -->
+  <div id="loginPage" class="container">
+    <div class="logo">
+      <span class="icon">📖</span>
+    </div>
+    <h1>Welcome to Extracurricular Hub!</h1>
+    <p class="subtitle"></p>
+    <div class="login-card">
+      <h2>Sign In</h2>
+      <p class="card-desc">
+        Sign in to register for clubs, sports, and events, track your participation, and get notifications about upcoming activities.
+      </p>
+      <form id="loginForm" onsubmit="validateLogin(event)">
+  <label for="email">Email / Username</label>
+  <input type="text" id="email" placeholder="Enter your email or username" required>
+  <span id="emailError" style="color:red; font-size:0.97em; display:none;">Please enter a valid email address (must include "@").</span>
+
+<label for="password">Password</label>
+  <input type="password" id="password" placeholder="Enter your password" minlength="8" maxlength="12" required>
+
+  <button type="submit">Login</button>
+</form>
+
+    </div>
+  </div>
+
+  <!-- DASHBOARD PAGE -->
+  <div id="dashboardPage" class="dashboard-container" style="display:none;">
+    <header class="dashboard-header">
+      <div class="dash-logo">
+        <span class="icon">📖</span>
+        <div>
+          <div class="hub-title">Extracurricular Hub</div>
+          <div class="hub-subtitle">Student Dashboard</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="showLogin()"> Logout</button>
+    </header>
+    <main class="dashboard-main">
+      <section class="dashboard-card events">
+        <h2><span>📅</span> Upcoming Activities / Events</h2>
+        <p class="light-desc">Discover and register for exciting extracurricular activities</p>
+        <table class="events-table" id="eventsTable">
+          <thead>
+            <tr>
+              <th>Event Name</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Will be populated by JS -->
+          </tbody>
+        </table>
+      </section>
+
+      <aside class="dashboard-sidebar">
+        <section class="dashboard-card notifications">
+          <h3>🔔 Notifications</h3>
+          <div class="notification">New event: Drama Club Auditions on Oct 7th</div>
+          <div class="notification">Reminder: Chess Club Tournament tomorrow at 3:00 PM</div>
+          <div class="notification">Update: Football Match venue changed to Main Field</div>
+        </section>
+        <section class="dashboard-card stats" id="statsSection">
+          <h3>Quick Stats</h3>
+          <div class="stat-row">
+            <div>Events Registered</div>
+            <div class="stat-number blue" id="regEventsCount">0</div>
+          </div>
+          <div class="stat-row">
+            <div>Events Attended</div>
+            <div class="stat-number orange" id="attendEventsCount">1</div>
+          </div>
+          <div class="stat-row">
+            <div>Available Events</div>
+            <div class="stat-number blue" id="availEventsCount">0</div>
+          </div>
+        </section>
+      </aside>
+    </main>
+    <!-- My Participation Section -->
+    <section class="dashboard-card participation-section" id="participationSection">
+      <h2><span style="font-size:1.3em;">👥</span> My Participation</h2>
+      <p class="light-desc">Track your registered and attended events</p>
+      <div class="participation-list" id="participationList">
+        <!-- Will be populated by JS -->
+      </div>
+    </section>
+  </div>
+
+  <!-- POPUP MODAL -->
+  <div class="modal-popup" id="modalPopup">
+    <div class="modal-content">
+      <div class="modal-title" id="modalTitle">Confirm Action</div>
+      <div class="modal-message" id="modalMessage"></div>
+      <div class="modal-btns">
+        <button class="modal-btn confirm" id="modalConfirmBtn">Confirm</button>
+        <button class="modal-btn cancel" id="modalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function validateLogin(event) {
+  event.preventDefault();
+  const emailInput = document.getElementById('email');
+  const emailError = document.getElementById('emailError');
+  const emailValue = emailInput.value.trim();
+  // If the field doesn't contain @, show error and return
+  if (!emailValue.includes('@')) {
+    emailError.style.display = 'inline';
+    emailInput.focus();
+    return false;
+  } else {
+    emailError.style.display = 'none';
+    showDashboard(event);
+  }
+}
+
+    // Demo events database (reset on page reload)
+    const eventsData = [
+      { id: 1, name: 'Chess Club Tournament',      tag: 'Competition', tagClass: 'competition',  date: '25 Sep 2025', time: '3:00 PM',                status: '' },
+      { id: 2, name: 'Inter-School Football Match',tag: 'Sports',      tagClass: 'sports',       date: '28 Sep 2025', time: '5:00 PM',                status: '' },
+      { id: 3, name: 'Art & Craft Workshop',       tag: 'Workshop',    tagClass: 'workshop',     date: '30 Sep 2025', time: '11:00 AM',               status: '' },
+      { id: 4, name: 'Debate Competition',         tag: 'Competition', tagClass: 'competition',  date: '2 Oct 2025',  time: '2:00 PM',                status: '' },
+      { id: 5, name: 'Music Jam Session',          tag: 'Arts',        tagClass: 'arts',         date: '5 Oct 2025',  time: '4:00 PM',                status: '' }
+    ];
+
+    // Demo initial participation
+    let participation = [
+      { id: 6, name: "Science Fair", date: "15 Sep 2025", status: "registered" },
+      { id: 7, name: "Photography Club", date: "20 Sep 2025", status: "attended" }
+    ];
+
+    // Helper vars for popup logic
+    let pendingAction = null;
+    let pendingEventId = null;
+
+    function showDashboard(event) {
+      event.preventDefault();
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('dashboardPage').style.display = 'block';
+      renderAll();
+    }
+    function showLogin() {
+      document.getElementById('dashboardPage').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    // Modal logic
+    function showModal({ title, message, onConfirm }) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalMessage').textContent = message;
+      document.getElementById('modalPopup').style.display = 'flex';
+      document.getElementById('modalConfirmBtn').onclick = () => {
+        document.getElementById('modalPopup').style.display = 'none';
+        if (onConfirm) onConfirm();
+      };
+      document.getElementById('modalCancelBtn').onclick = () => {
+        document.getElementById('modalPopup').style.display = 'none';
+      };
+    }
+
+    // Renders
+    function renderEventsTable() {
+      const tbody = document.querySelector('#eventsTable tbody');
+      tbody.innerHTML = '';
+      eventsData.forEach((ev) => {
+        const tr = document.createElement('tr');
+
+        // Participation status
+        let partStatus = participation.find(p => p.id === ev.id);
+
+        tr.innerHTML = `
+          <td>${ev.name} <span class="badge ${ev.tagClass}">${ev.tag}</span></td>
+          <td>${ev.date}</td>
+          <td>${ev.time}</td>
+          <td>
+            <button class="register-btn"
+              data-id="${ev.id}"
+              data-action="${partStatus ? 'unregister' : 'register'}">
+              ${partStatus ? 'Unregister' : 'Register'}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Button logic
+      Array.from(document.querySelectorAll('.register-btn')).forEach(btn => {
+        btn.onclick = function() {
+          let id = parseInt(this.dataset.id, 10);
+          let action = this.dataset.action;
+          let ev = eventsData.find(e => e.id === id);
+
+          showModal({
+            title: action === 'register' ? 'Register for Event' : 'Unregister from Event',
+            message: action === 'register' ?
+              `Do you want to register for "${ev.name}"?`
+              : `Are you sure you want to unregister from "${ev.name}"?`,
+            onConfirm: () => {
+              if(action === 'register') {
+                participation.push({ id: ev.id, name: ev.name, date: ev.date, status:'registered' });
+              } else {
+                participation = participation.filter(p => p.id !== ev.id);
+              }
+              renderAll();
+            }
+          });
+        };
+      });
+    }
+
+    function renderParticipation() {
+      const list = document.getElementById("participationList");
+      list.innerHTML = "";
+      // Sort: registered at top, then attended
+      participation.sort((a, b) => a.status.localeCompare(b.status));
+      participation.forEach(ev => {
+        let badgeLabel = ev.status === "attended" ? "Attended" : "Registered";
+        let badgeClass = ev.status === "attended" ? "attended" : "registered";
+        const div = document.createElement('div');
+        div.className = 'participation-item';
+        div.innerHTML = `
+          <div>
+            <div class="event-title">${ev.name}</div>
+            <div class="event-date">${ev.date}</div>
+          </div>
+          <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderQuickStats() {
+      let regCount = participation.filter(ev => ev.status === "registered").length;
+      let attCount = participation.filter(ev => ev.status === "attended").length;
+      let availCount = eventsData.length;
+      document.getElementById("regEventsCount").textContent = regCount;
+      document.getElementById("attendEventsCount").textContent = attCount;
+      document.getElementById("availEventsCount").textContent = availCount;
+    }
+
+    function renderAll() {
+      renderEventsTable();
+      renderParticipation();
+      renderQuickStats();
+    }
+
+    // On page load, render static tables (if dashboard is visible)
+    if(document.getElementById('dashboardPage').style.display === 'block') {
+      renderAll();
+    }
+    
+  </script>
+</body>
+</html>
